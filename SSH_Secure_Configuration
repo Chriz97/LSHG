@@ -1,0 +1,53 @@
+#!/bin/bash
+# This script secures SSH configuration, generates SSH keys, and sets up secure access.
+
+# Step 1: Update and Install Necessary Tools
+sudo apt update && sudo apt upgrade -y
+sudo apt install fail2ban -y
+
+# Step 2: Backup Current SSH Configuration
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+
+# Step 3: Update SSH Configuration
+sudo sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config # Change Standard SSH to unprivileged port 2222
+sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config # Prohibt 
+sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo sed -i 's/#StrictModes yes/StrictModes yes/' /etc/ssh/sshd_config
+
+# Add additional security configurations if not already present
+sudo sed -i '/^#MaxAuthTries/c\MaxAuthTries 3' /etc/ssh/sshd_config
+sudo sed -i '/^#LoginGraceTime/c\LoginGraceTime 30s' /etc/ssh/sshd_config
+sudo sed -i '/^#MaxSessions/c\MaxSessions 2' /etc/ssh/sshd_config
+
+# Step 4: Restrict User Access (Optional, modify with your username)
+echo "AllowUsers chriz" | sudo tee -a /etc/ssh/sshd_config
+
+# Step 5: Generate SSH Key Pair
+ssh-keygen -t rsa -b 4096 -m PEM
+
+# Step 6: Copy Public Key to Authorized Keys
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+
+# Step 7: Copy Private Key to Windows Machine
+scp ~/.ssh/id_rsa "${windows_user}@${windows_ip}:/Users/${windows_user}/Documents/RSA/id_rsa"
+
+# Step 8: Configure UFW to Allow Only the New Port
+sudo ufw allow 2222/tcp
+sudo ufw delete allow 22/tcp
+sudo ufw enable
+
+# Step 9: Restart SSH Service
+sudo systemctl restart ssh
+
+# Step 10: Verify SSH Service Status
+sudo systemctl status ssh | grep "Active:"
+
+# Step 11: Test Fail2Ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+sudo systemctl status fail2ban | grep "Active:"
+
+# Step 13: Connect to the SSH Server via Port 2222
+echo "ssh -i \"C:/Users/${windows_user}/Documents/RSA/id_rsa\" -p 2222 user@<server-ip>"

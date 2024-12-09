@@ -30,8 +30,12 @@ cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 chmod 700 ~/.ssh
 
-# Step 7: Copy Private Key to Windows Machine
+# Step 7: Copy Private Key to Windows Machine and Secure the private key on your Windows machine by restricting permissions with icalcs
 scp ~/.ssh/id_rsa "${windows_user}@${windows_ip}:/Users/${windows_user}/Documents/RSA/id_rsa"
+
+icacls "C:\Users\xxx\xxx\RSA\id_rsa" /inheritance:r processed file: C:\xxx\xxx\xxx\RSA\id_rsa
+
+icacls "C:\Users\xxx\xxx\RSA\id_rsa"  /grant:r Christoph:RX processed file: C:\xxx\xxx\xxx\RSA\id_rsa
 
 # Step 8: Configure UFW to Allow Only the New Port
 sudo ufw allow 2222/tcp
